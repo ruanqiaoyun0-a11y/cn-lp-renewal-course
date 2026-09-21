@@ -23,6 +23,14 @@ let finalMessages = [];
 let finalRound = 0;
 let finalAiScoring = false;
 
+// ---- 第 6 章 · 四段阶梯实战演练（练习，不计入考核） ----
+// scenarios: { sc1: { started, messages:[], round, submitted, score, breakdown, feedback, aiScoring } }
+let scenarios = {};
+let scenarioActiveTab = '';
+// ---- 第 6 章 · 三轮话术写作练习（本地关键词评分，不计入考核） ----
+// writings: { wd1: { text, submitted, score, dims } }
+let writings = {};
+
 // ---------------- AI 后端 ----------------
 // A 档：密钥在构建期以 XOR+hex 混淆注入；未注入时 _rK() 返回空串 → AI 按钮置灰并降级
 const LLM_API_URL = APP.aiBaseUrl + '/chat/completions';
@@ -61,6 +69,8 @@ function init() {
   renderSections();
   renderLevelLibrary();
   mountFillQuiz(4);       // 第 4 章填空题：挂载进内容里预留的容器 #fillQuizContainer4
+  renderCh6ScenarioTabs();// 第 6 章四段阶梯实战演练：挂载进 #ch6ScenarioTabs
+  renderWritingDrills();  // 第 6 章三轮话术写作练习：挂载进 #ch6WritingDrills
   loadProgress();
   startTimer();
   loadNotes();
@@ -543,33 +553,43 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function renderFinalMessage(role, text) {
-  const container = document.getElementById('finalMessages');
+// ---- 通用聊天渲染（支持多实例：终极考核 final / 第 6 章四段演练 sc1..sc4） ----
+// key      ：实例标识，决定 DOM id 前缀（finalMessages / scenarioMessages-sc1 ...）
+// persona  ：家长显示名（如「洋阳妈妈」）
+// avatar   ：家长头像文字（如「妈」）
+function renderChatMessage(key, persona, avatar, role, text) {
+  const container = document.getElementById(key + 'Messages');
   if (!container) return;
   const div = document.createElement('div');
   div.className = 'chat-msg ' + (role === 'lp' ? 'lp' : 'parent');
-  const label = role === 'lp' ? '班主任 · 我' : '洋阳妈妈';
-  const avatar = role === 'lp' ? '我' : '妈';
-  div.innerHTML = '<div class="chat-avatar">' + avatar + '</div><div class="chat-content">' +
-    '<div class="chat-label">' + label + '</div><div class="chat-bubble">' + escapeHtml(text) + '</div></div>';
+  const label = role === 'lp' ? '班主任 · 我' : persona;
+  const av = role === 'lp' ? '我' : avatar;
+  div.innerHTML = '<div class="chat-avatar">' + escapeHtml(av) + '</div><div class="chat-content">' +
+    '<div class="chat-label">' + escapeHtml(label) + '</div><div class="chat-bubble">' + escapeHtml(text) + '</div></div>';
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
 
-function showFinalTyping(show) {
-  let el = document.getElementById('finalTyping');
+function showChatTyping(key, persona, avatar, show) {
+  const elId = key + 'Typing';
+  let el = document.getElementById(elId);
   if (!show) { if (el) el.remove(); return; }
   if (el) return;
-  const container = document.getElementById('finalMessages');
+  const container = document.getElementById(key + 'Messages');
   if (!container) return;
   el = document.createElement('div');
-  el.id = 'finalTyping';
+  el.id = elId;
   el.className = 'chat-msg parent';
-  el.innerHTML = '<div class="chat-avatar">妈</div><div class="chat-content"><div class="chat-label">洋阳妈妈</div>' +
+  el.innerHTML = '<div class="chat-avatar">' + escapeHtml(avatar) + '</div><div class="chat-content">' +
+    '<div class="chat-label">' + escapeHtml(persona) + '</div>' +
     '<div class="typing-indicator"><span></span><span></span><span></span></div></div>';
   container.appendChild(el);
   container.scrollTop = container.scrollHeight;
 }
+
+// 兼容层：终极考核沿用旧函数名，行为不变
+function renderFinalMessage(role, text) { renderChatMessage('final', '洋阳妈妈', '妈', role, text); }
+function showFinalTyping(show) { showChatTyping('final', '洋阳妈妈', '妈', show); }
 
 function updateFinalTopic() {
   const lastAi = finalMessages.filter(m => m.role === 'assistant').pop();
@@ -774,8 +794,428 @@ function restoreFinalConversation() {
 }
 
 // ============================================================
-// 计时器 / 标签页 / 笔记
+// 第 6 章 · 四段阶梯实战演练（练习，不计入考核，不卡通关）
+// 交互形式参照示例课：Tab 标签页切换场景 + 多轮自由对话
 // ============================================================
+function scState(id) {
+  if (!scenarios[id]) {
+    scenarios[id] = {
+      started: false, messages: [], round: 0,
+      submitted: false, score: 0, breakdown: null, feedback: '', aiScoring: false
+    };
+  }
+  return scenarios[id];
+}
+function scMeta(id) {
+  return (APP.ch6DialogueScenarios || []).filter(s => s.id === id)[0] || null;
+}
+
+function renderCh6ScenarioTabs() {
+  const box = document.getElementById('ch6ScenarioTabs');
+  const list = APP.ch6DialogueScenarios || [];
+  if (!box || !list.length) return;
+  if (!scenarioActiveTab) scenarioActiveTab = list[0].id;
+  box.innerHTML =
+    '<div class="tab-wrap" id="scTabBar">' +
+      list.map(s => '<button class="tab-btn' + (s.id === scenarioActiveTab ? ' active' : '') +
+        '" data-sctab="' + s.id + '" onclick="switchScenarioTab(\'' + s.id + '\')">' + escapeHtml(s.tab) + '</button>').join('') +
+    '</div>' +
+    list.map(s => '<div class="tab-panel' + (s.id === scenarioActiveTab ? ' active' : '') + '" id="scPanel-' + s.id + '">' +
+      renderScenarioBody(s) + '</div>').join('');
+  list.forEach(s => restoreScenarioUI(s.id));
+}
+
+function switchScenarioTab(id) {
+  scenarioActiveTab = id;
+  const bar = document.getElementById('scTabBar');
+  if (bar) bar.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.sctab === id);
+  });
+  const wrap = document.getElementById('ch6ScenarioTabs');
+  if (wrap) wrap.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'scPanel-' + id));
+}
+
+function renderScenarioBody(s) {
+  const st = scState(s.id);
+  const topic0 = (s.topic_tags && s.topic_tags[0]) ? s.topic_tags[0].name : '开场寒暄';
+  return '<div class="scenario-card" id="scCard-' + s.id + '">' +
+    '<div class="scenario-setup">' +
+      '<div class="ss-title">' + escapeHtml(s.title) + '</div>' +
+      '<div class="ss-body">' + s.setup + '</div>' +
+      '<div class="ss-meta">🧭 <strong>建议至少完成 ' + s.min_rounds + ' 轮对话</strong>（练习，不计分、不计入考核，随时可退出）</div>' +
+    '</div>' +
+    '<div class="dialogue-container" id="' + s.id + 'Dialogue">' +
+      '<div class="dialogue-header"><span>📞 ' + escapeHtml(s.persona_name) + ' · 自由对话</span>' +
+        '<div class="dialogue-meta">' +
+          '<span class="badge badge-primary">🔄 对话轮数：<b id="' + s.id + 'Round">' + (st.round || 0) + '</b></span>' +
+          '<span class="badge badge-warning" id="' + s.id + 'TopicBadge">📍 当前话题：' + escapeHtml(topic0) + '</span>' +
+        '</div></div>' +
+      '<div class="dialogue-messages" id="' + s.id + 'Messages">' +
+        '<div class="chat-msg system" style="justify-content:center"><div class="chat-bubble" style="background:#F8FAFC;color:var(--text-secondary);max-width:90%;text-align:center">点击「开始练习」后，' + escapeHtml(s.persona_name) + '将接通，对话会显示在这里。</div></div>' +
+      '</div>' +
+      '<div class="dialogue-input-area">' +
+        '<input type="text" id="' + s.id + 'Input" placeholder="输入你要对家长说的话..." disabled onkeypress="if(event.key===\'Enter\')sendScenarioMessage(\'' + s.id + '\')">' +
+        '<button class="btn" id="' + s.id + 'SendBtn" onclick="sendScenarioMessage(\'' + s.id + '\')" disabled>发送</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="final-actions" style="margin-top:14px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
+      '<button class="btn" id="' + s.id + 'StartBtn" onclick="startScenario(\'' + s.id + '\')">🎬 开始练习</button>' +
+      '<button class="btn btn-success" id="' + s.id + 'ScoreBtn" onclick="endScenario(\'' + s.id + '\')" disabled>📊 结束并评分</button>' +
+      '<button class="btn btn-outline" onclick="resetScenario(\'' + s.id + '\')">🔄 重新开始</button>' +
+    '</div>' +
+    '<div class="ai-feedback-panel" id="' + s.id + 'Feedback"></div>' +
+  '</div>';
+}
+
+function updateScenarioTopic(id) {
+  const s = scMeta(id), st = scState(id);
+  if (!s) return '开场寒暄';
+  const lastAi = st.messages.filter(m => m.role === 'assistant').pop();
+  const lastText = lastAi ? lastAi.content : '';
+  let topic = (s.topic_tags && s.topic_tags[0]) ? s.topic_tags[0].name : '开场寒暄';
+  for (const t of (s.topic_tags || [])) {
+    if (t.kw && t.kw.some(k => lastText.indexOf(k) !== -1)) { topic = t.name; break; }
+  }
+  const badge = document.getElementById(id + 'TopicBadge');
+  if (badge) badge.textContent = '📍 当前话题：' + topic;
+  return topic;
+}
+
+function getScenarioFallback(s, userText) {
+  for (const pair of (s.fallback_replies || [])) {
+    if (pair[0].some(k => userText.indexOf(k) !== -1)) return pair[1];
+  }
+  return '嗯，我听明白了。不过这事我还得再想想，你能再跟我说说具体怎么安排吗？';
+}
+
+async function startScenario(id) {
+  const s = scMeta(id), st = scState(id);
+  if (!s || st.started || st.aiScoring) return;
+  st.started = true;
+  st.messages = [{ role: 'system', content: s.system_prompt }];
+  st.round = 0;
+  const startBtn = document.getElementById(id + 'StartBtn');
+  if (startBtn) startBtn.disabled = true;
+  const input = document.getElementById(id + 'Input'), sendBtn = document.getElementById(id + 'SendBtn');
+  if (input) { input.disabled = false; }
+  if (sendBtn) sendBtn.disabled = false;
+  const scoreBtn = document.getElementById(id + 'ScoreBtn');
+  if (scoreBtn) scoreBtn.disabled = false;
+  const box = document.getElementById(id + 'Messages');
+  if (box) box.innerHTML = '';
+  showChatTyping(id, s.persona_name, '妈', true);
+  let reply = '喂，你好，请问哪位？';
+  try {
+    const data = await callLLM(st.messages, { maxTokens: 200, temperature: 0.75 });
+    reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim() || reply;
+  } catch (e) {
+    showToast('AI 家长暂时无法接通，已切换为脚本模拟回复', 'warning');
+  } finally {
+    showChatTyping(id, s.persona_name, '妈', false);
+  }
+  st.messages.push({ role: 'assistant', content: reply });
+  renderChatMessage(id, s.persona_name, '妈', 'parent', reply);
+  updateScenarioTopic(id);
+  saveProgress();
+}
+
+async function sendScenarioMessage(id) {
+  const s = scMeta(id), st = scState(id);
+  if (!s || !st.started || st.aiScoring) return;
+  const input = document.getElementById(id + 'Input');
+  if (!input) return;
+  const text = (input.value || '').trim();
+  if (!text) return;
+  input.value = '';
+  renderChatMessage(id, s.persona_name, '妈', 'lp', text);
+  st.messages.push({ role: 'user', content: text });
+  st.round++;
+  const rEl = document.getElementById(id + 'Round');
+  if (rEl) rEl.textContent = st.round;
+  input.disabled = true;
+  const sendBtn = document.getElementById(id + 'SendBtn');
+  if (sendBtn) sendBtn.disabled = true;
+  showChatTyping(id, s.persona_name, '妈', true);
+  let reply;
+  try {
+    const data = await callLLM(st.messages, { maxTokens: 200, temperature: 0.75 });
+    reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim() || getScenarioFallback(s, text);
+  } catch (e) {
+    reply = getScenarioFallback(s, text);
+    showToast('AI 服务暂时不可用，已切换为脚本模拟回复', 'warning');
+  } finally {
+    showChatTyping(id, s.persona_name, '妈', false);
+    input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+  }
+  st.messages.push({ role: 'assistant', content: reply });
+  renderChatMessage(id, s.persona_name, '妈', 'parent', reply);
+  updateScenarioTopic(id);
+  saveProgress();
+}
+
+async function endScenario(id) {
+  const s = scMeta(id), st = scState(id);
+  if (!s || !st.started || st.aiScoring || st.submitted) return;
+  if (st.round < s.min_rounds) {
+    showToast('建议至少完成 ' + s.min_rounds + ' 轮对话再评分（练习不计入考核，可继续聊）', 'warning');
+    return;
+  }
+  st.aiScoring = true;
+  const input = document.getElementById(id + 'Input');
+  if (input) input.disabled = true;
+  const sendBtn = document.getElementById(id + 'SendBtn');
+  if (sendBtn) sendBtn.disabled = true;
+  const scoreBtn = document.getElementById(id + 'ScoreBtn');
+  if (scoreBtn) scoreBtn.disabled = true;
+  showToast('正在调用 AI 评分官...', 'success');
+  await scoreScenario(id);
+}
+
+async function scoreScenario(id) {
+  const s = scMeta(id), st = scState(id);
+  if (!s) return;
+  const pname = s.persona_name;
+  const dialogue = st.messages
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => (m.role === 'user' ? '班主任' : pname) + '：' + m.content).join('\n');
+  const scoringPrompt = s.scoring_prompt.replace('{dialogue}', dialogue);
+  try {
+    const data = await callLLM([
+      { role: 'system', content: '你是一位严格而公正的评分官，只输出合法 JSON，不要任何多余文字。' },
+      { role: 'user', content: scoringPrompt }
+    ], { maxTokens: 800, temperature: 0.3 });
+    const raw = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
+    let result = {};
+    try {
+      const m = raw.match(/\{[\s\S]*\}/);
+      result = JSON.parse(m ? m[0] : raw);
+    } catch (e) { console.warn('第 6 章演练评分 JSON 解析失败：', raw); }
+    const sc = parseInt(result.score, 10);
+    st.score = Math.min(100, Math.max(0, isNaN(sc) ? 65 : sc));
+    st.breakdown = result.breakdown || null;
+    st.feedback = result.feedback || '本次练习已完成。';
+  } catch (e) {
+    console.error('第 6 章演练评分失败：', e);
+    st.score = 0;
+    st.breakdown = null;
+    st.feedback = 'AI 评分服务暂时不可用，本次未获得评分。可以点「重新开始」再练一次。';
+  } finally {
+    st.aiScoring = false;
+    if (st.score > 0) st.submitted = true;
+    renderScenarioScore(id);
+    saveProgress();
+  }
+}
+
+// 练习区红线：只展示实际得分，不设通过线、不显示「未通过」
+function renderScenarioScore(id) {
+  const s = scMeta(id), st = scState(id);
+  const fb = document.getElementById(id + 'Feedback');
+  if (!s || !fb) return;
+  if (!st.submitted) {
+    fb.innerHTML = '<div style="padding:16px;background:#FEF2F2;border-radius:8px;font-size:14px;color:#991B1B;text-align:center">' + escapeHtml(st.feedback) + '</div>';
+    fb.classList.add('show');
+    return;
+  }
+  const score = st.score;
+  const bd = st.breakdown || {};
+  const dims = s.dims || [];
+  fb.innerHTML =
+    '<div class="score-display"><div class="score-circle ' + (score >= 80 ? 'high' : score >= 60 ? 'medium' : 'low') + '">' + score + '</div>' +
+    '<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">本次练习得分</div></div>' +
+    '<div class="scenario-dims">' + dims.map(d =>
+      '<div class="final-score-card"><div class="score">' + (bd[d.key] === undefined ? '—' : escapeHtml(String(bd[d.key]))) + '</div>' +
+      '<div class="label">' + escapeHtml(d.name) + ' /' + d.max + '</div></div>').join('') + '</div>' +
+    '<div class="final-feedback-text"><strong>AI 评分官点评：</strong><br>' + escapeHtml(st.feedback) + '</div>' +
+    '<div class="scenario-note">🧪 本区为练习，不设通过线、不计入考核，可点「重新开始」反复练习。</div>';
+  fb.classList.add('show');
+}
+
+function resetScenario(id) {
+  const s = scMeta(id);
+  if (!s) return;
+  scenarios[id] = { started: false, messages: [], round: 0, submitted: false, score: 0, breakdown: null, feedback: '', aiScoring: false };
+  const topic0 = (s.topic_tags && s.topic_tags[0]) ? s.topic_tags[0].name : '开场寒暄';
+  const box = document.getElementById(id + 'Messages');
+  if (box) box.innerHTML = '<div class="chat-msg system" style="justify-content:center"><div class="chat-bubble" style="background:#F8FAFC;color:var(--text-secondary);max-width:90%;text-align:center">点击「开始练习」后，' + escapeHtml(s.persona_name) + '将接通，对话会显示在这里。</div></div>';
+  const input = document.getElementById(id + 'Input');
+  if (input) { input.value = ''; input.disabled = true; }
+  const sendBtn = document.getElementById(id + 'SendBtn'); if (sendBtn) sendBtn.disabled = true;
+  const scoreBtn = document.getElementById(id + 'ScoreBtn'); if (scoreBtn) scoreBtn.disabled = true;
+  const startBtn = document.getElementById(id + 'StartBtn'); if (startBtn) startBtn.disabled = false;
+  const rEl = document.getElementById(id + 'Round'); if (rEl) rEl.textContent = '0';
+  const tEl = document.getElementById(id + 'TopicBadge'); if (tEl) tEl.textContent = '📍 当前话题：' + topic0;
+  const fb = document.getElementById(id + 'Feedback');
+  if (fb) { fb.classList.remove('show'); fb.innerHTML = ''; }
+  saveProgress();
+}
+
+function restoreScenarioUI(id) {
+  const s = scMeta(id), st = scState(id);
+  if (!s || !st.started) return;
+  const box = document.getElementById(id + 'Messages');
+  if (box) box.innerHTML = '';
+  st.messages.forEach(m => {
+    if (m.role === 'system') return;
+    if (m.role === 'user') renderChatMessage(id, s.persona_name, '妈', 'lp', m.content);
+    if (m.role === 'assistant') renderChatMessage(id, s.persona_name, '妈', 'parent', m.content);
+  });
+  const rEl = document.getElementById(id + 'Round'); if (rEl) rEl.textContent = st.round;
+  updateScenarioTopic(id);
+  const input = document.getElementById(id + 'Input'), sendBtn = document.getElementById(id + 'SendBtn');
+  const scoreBtn = document.getElementById(id + 'ScoreBtn'), startBtn = document.getElementById(id + 'StartBtn');
+  if (st.submitted) {
+    if (input) input.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
+    if (scoreBtn) scoreBtn.disabled = true;
+    if (startBtn) startBtn.disabled = true;
+    renderScenarioScore(id);
+  } else {
+    if (startBtn) startBtn.disabled = true;
+    if (input) input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    if (scoreBtn) scoreBtn.disabled = false;
+  }
+}
+
+// ============================================================
+// 第 6 章 · 三轮话术写作练习（本地关键词评分，不消耗 AI 额度，不计入考核）
+// ============================================================
+function renderWritingDrills() {
+  const box = document.getElementById('ch6WritingDrills');
+  const list = APP.ch6WritingDrills || [];
+  if (!box || !list.length) return;
+  box.innerHTML = list.map((d, i) => {
+    const st = writings[d.id] || {};
+    const done = !!st.submitted;
+    return '<div class="writing-card" id="wc-' + d.id + '">' +
+      '<div class="wc-head"><h3>' + escapeHtml(d.title) + '</h3>' +
+        '<span class="badge badge-primary">5 维 × 20 分</span></div>' +
+      '<div class="wc-scene">🎬 <strong>场景：</strong>' + escapeHtml(d.scene) + '</div>' +
+      '<div class="wc-info">👦 <strong>学员信息：</strong>' + d.student_info + '</div>' +
+      '<div class="wc-task">📝 <strong>任务：</strong>' + d.task + '</div>' +
+      '<textarea class="practice-textarea" id="wt-' + d.id + '" rows="8" placeholder="' + escapeHtml(d.placeholder) + '"' + (done ? ' disabled' : '') + '>' + (st.text ? escapeHtml(st.text) : '') + '</textarea>' +
+      '<div class="wc-actions">' +
+        '<button class="btn" id="wsub-' + d.id + '" onclick="submitWriting(\'' + d.id + '\')"' + (done ? ' style="display:none"' : '') + '>📝 提交评分</button>' +
+        '<span class="wc-warn" id="wwarn-' + d.id + '" style="display:none">⚠️ 字数不足，请继续补充</span>' +
+        (done ? '<span class="wc-done" id="wdone-' + d.id + '">✅ 已提交（' + st.score + ' 分）</span>' : '') +
+        '<button class="btn btn-outline btn-sm" id="wreset-' + d.id + '" onclick="resetWriting(\'' + d.id + '\')"' + (done ? '' : ' style="display:none"') + '>🔄 重新作答</button>' +
+      '</div>' +
+      '<div class="ch3-ref-panel" id="wscore-' + d.id + '"></div>' +
+      '<div class="ch3-ref-panel" id="wref-' + d.id + '">' +
+        '<div class="highlight-box success"><strong>📋 参考话术（仅作参考，并非唯一答案）：</strong><br>' + d.ref_answer + '</div>' +
+        '<div class="tips-box" style="margin-top:12px">' + escapeHtml(d.ref_tips) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  list.forEach(d => restoreWritingUI(d.id));
+}
+
+function submitWriting(id) {
+  const d = (APP.ch6WritingDrills || []).filter(x => x.id === id)[0];
+  const ta = document.getElementById('wt-' + id);
+  if (!d || !ta) return;
+  const raw = (ta.value || '').trim();
+  const warn = document.getElementById('wwarn-' + id);
+  if (raw.length < d.min_len) {
+    if (warn) { warn.textContent = '⚠️ 至少 ' + d.min_len + ' 字（当前 ' + raw.length + ' 字），请继续补充'; warn.style.display = 'inline'; }
+    ta.focus();
+    return;
+  }
+  if (warn) warn.style.display = 'none';
+  const t = raw.toLowerCase();
+  let total = 0;
+  const dimResults = (d.dims || []).map(dim => {
+    const matched = (dim.kw || []).filter(k => t.indexOf(String(k).toLowerCase()) !== -1);
+    const score = Math.min(dim.max, matched.length * 4);
+    total += score;
+    return { name: dim.name, score: score, max: dim.max, matched: matched.slice(0, 6) };
+  });
+  writings[id] = { text: raw, submitted: true, score: total, dims: dimResults };
+  ta.disabled = true;
+  const sub = document.getElementById('wsub-' + id); if (sub) sub.style.display = 'none';
+  const res = document.getElementById('wreset-' + id); if (res) res.style.display = '';
+  const card = document.getElementById('wc-' + id);
+  if (card) card.classList.add('submitted');
+  let doneEl = document.getElementById('wdone-' + id);
+  if (!doneEl) {
+    doneEl = document.createElement('span');
+    doneEl.id = 'wdone-' + id;
+    doneEl.className = 'wc-done';
+    const actions = card ? card.querySelector('.wc-actions') : null;
+    if (actions && res) actions.insertBefore(doneEl, res);
+    else if (actions) actions.appendChild(doneEl);
+  }
+  doneEl.textContent = '✅ 已提交（' + total + ' 分）';
+  renderWritingScore(id);
+  saveProgress();
+}
+
+function renderWritingScore(id) {
+  const st = writings[id];
+  const panel = document.getElementById('wscore-' + id);
+  const refPanel = document.getElementById('wref-' + id);
+  if (!st || !st.submitted || !panel) return;
+  panel.innerHTML = '<div class="card" style="margin-top:16px;border-top:4px solid var(--accent)">' +
+    '<h2 style="margin-bottom:6px;color:var(--primary)">📊 本次写作得分</h2>' +
+    '<p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">本地关键词命中评分——命中 1 处计 4 分，单维上限 20 分。<strong>练习不计入考核。</strong></p>' +
+    '<div class="wc-score-dims">' + (st.dims || []).map((dim, i) => {
+      const pct = Math.round(dim.score / dim.max * 100);
+      const color = pct >= 75 ? '#059669' : pct >= 40 ? '#D97706' : '#DC2626';
+      return '<div class="wc-dim">' +
+        '<div class="wc-dim-top"><span>' + (i + 1) + '. ' + escapeHtml(dim.name) + '</span>' +
+        '<span style="color:' + color + '">' + dim.score + '/' + dim.max + '</span></div>' +
+        '<div class="wc-bar"><div class="wc-bar-in" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+        '<div class="wc-kw">命中：' + (dim.matched.length ? escapeHtml(dim.matched.join('、')) : '未命中关键词') + '</div>' +
+      '</div>';
+    }).join('') + '</div>' +
+    '<div class="wc-total"><div class="score-circle ' + (st.score >= 80 ? 'high' : st.score >= 60 ? 'medium' : 'low') + '">' + st.score + '</div>' +
+    '<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">总分 ' + st.score + ' / 100</div></div>' +
+    '<div class="scenario-note">🧪 本练习不设通过线、不计入考核。对照下方参考话术看看还有哪些要点可以补上。</div>' +
+  '</div>';
+  panel.classList.add('show');
+  if (refPanel) refPanel.classList.add('show');
+}
+
+function resetWriting(id) {
+  const d = (APP.ch6WritingDrills || []).filter(x => x.id === id)[0];
+  if (!d) return;
+  delete writings[id];
+  const ta = document.getElementById('wt-' + id);
+  if (ta) { ta.disabled = false; ta.value = ''; if (ta.focus) ta.focus(); }
+  const sub = document.getElementById('wsub-' + id); if (sub) sub.style.display = '';
+  const res = document.getElementById('wreset-' + id); if (res) res.style.display = 'none';
+  const doneEl = document.getElementById('wdone-' + id); if (doneEl) doneEl.remove();
+  const warn = document.getElementById('wwarn-' + id); if (warn) warn.style.display = 'none';
+  const panel = document.getElementById('wscore-' + id); if (panel) { panel.classList.remove('show'); panel.innerHTML = ''; }
+  const refPanel = document.getElementById('wref-' + id); if (refPanel) refPanel.classList.remove('show');
+  const card = document.getElementById('wc-' + id); if (card) card.classList.remove('submitted');
+  saveProgress();
+}
+
+function restoreWritingUI(id) {
+  const st = writings[id];
+  if (!st || !st.submitted) return;
+  const ta = document.getElementById('wt-' + id);
+  if (ta) { ta.disabled = true; if (st.text) ta.value = st.text; }
+  const sub = document.getElementById('wsub-' + id); if (sub) sub.style.display = 'none';
+  const res = document.getElementById('wreset-' + id); if (res) res.style.display = '';
+  const card = document.getElementById('wc-' + id); if (card) card.classList.add('submitted');
+  let doneEl = document.getElementById('wdone-' + id);
+  if (!doneEl && card) {
+    doneEl = document.createElement('span');
+    doneEl.id = 'wdone-' + id;
+    doneEl.className = 'wc-done';
+    const actions = card.querySelector('.wc-actions');
+    if (actions) (res ? actions.insertBefore(doneEl, res) : actions.appendChild(doneEl));
+  }
+  if (doneEl) doneEl.textContent = '✅ 已提交（' + st.score + ' 分）';
+  renderWritingScore(id);
+}
+
+
 function startTimer() {
   const saved = localStorage.getItem(LS_PREFIX + '_study_seconds');
   if (saved) studySeconds = parseInt(saved, 10);
@@ -871,6 +1311,9 @@ function saveProgress() {
     finalMessages: finalMessages,
     finalRound: finalRound,
     finalAiScoring: false,
+    scenarios: scenarios,
+    scenarioActiveTab: scenarioActiveTab,
+    writings: writings,
     currentSection: currentSection
   };
   try { localStorage.setItem(LS_PREFIX + '_progress', JSON.stringify(state)); } catch (e) {}
@@ -893,6 +1336,10 @@ function loadProgress() {
       finalConversationStarted = saved.finalConversationStarted || false;
       finalMessages = saved.finalMessages || [];
       finalRound = saved.finalRound || 0;
+      scenarios = saved.scenarios || {};
+      Object.keys(scenarios).forEach(k => { scenarios[k].aiScoring = false; });
+      scenarioActiveTab = saved.scenarioActiveTab || '';
+      writings = saved.writings || {};
       currentSection = saved.currentSection || 0;
       // 兼容旧数据：有完成标记但没有答题记录 → 重置测验状态
       const hasDoneButNoAnswers = chapterQuizDone.some(d => d) && Object.keys(chapterQuizAnswers).length === 0;
@@ -909,6 +1356,9 @@ function loadProgress() {
       }
       restoreFillUI();
       restoreFinalConversation();
+      // 第 6 章练习区：Tab 已按 scenarioActiveTab 渲染，这里恢复对话与写作状态
+      (APP.ch6DialogueScenarios || []).forEach(s => restoreScenarioUI(s.id));
+      (APP.ch6WritingDrills || []).forEach(d => restoreWritingUI(d.id));
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       const section = document.querySelector('.section[data-section="' + currentSection + '"]');
       if (section) section.classList.add('active');
