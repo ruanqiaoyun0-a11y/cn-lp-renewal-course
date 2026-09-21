@@ -1,0 +1,227 @@
+/* ============================================================
+   《续费全流程实战》微课 · 补充样式（叠加在 _shell.css 之上）
+   主题：国内 LP · 简体中文 · 大陆用语
+   ============================================================ */
+
+/* ---------------- 视频 ---------------- */
+.video-wrapper{margin:24px 0}
+.video-label{font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+video{width:100%;border-radius:var(--radius-sm);background:#000;display:block}
+.video-placeholder{background:#0F172A;color:#94A3B8;border-radius:8px;padding:28px;text-align:center;font-size:13px}
+
+/* ---------------- 话术模板（可填空位） ---------------- */
+.script-tpl{background:#F1F5F9;border-left:4px solid var(--primary);padding:16px 20px;border-radius:8px;font-size:14px;line-height:2;color:#334155;margin:14px 0}
+.script-tpl .var{color:#B45309;font-weight:700;border-bottom:1px dashed #D97706;padding:0 2px}
+
+/* ---------------- 家长原话 ---------------- */
+.quote-line{background:#FEF3C7;border-radius:8px;padding:12px 16px;font-weight:600;color:#92400E;margin:12px 0;font-size:14px;line-height:1.8}
+.quote-line::before{content:'💬 家长原话：';font-weight:700}
+
+/* ---------------- 反思框 ---------------- */
+.reflect-box{background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-left:4px solid var(--primary);padding:18px 22px;border-radius:8px;margin:20px 0;font-size:14px;line-height:1.9}
+.reflect-box .rt{font-weight:700;color:var(--primary-dark);display:block;margin-bottom:6px;font-size:15px}
+
+/* ---------------- 场景激活框（章首） ---------------- */
+.activate-box{background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:1px dashed #F59E0B;border-radius:10px;padding:18px 22px;margin:0 0 20px;font-size:14px;line-height:1.9}
+.activate-box .at{font-weight:700;color:#B45309;display:block;margin-bottom:6px;font-size:15px}
+
+/* ---------------- 表格 ---------------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+table th,table td{border:1px solid var(--border);padding:10px 12px;text-align:left;vertical-align:top;line-height:1.7}
+table th{background:#EEF2FF;font-weight:700;color:var(--primary-dark);white-space:nowrap}
+table tbody tr:nth-child(even) td{background:#F8FAFC}
+tr.tr-hot td{background:#FEF3C7!important;font-weight:600;color:#92400E}
+
+/* ---------------- 第1章 · 续费公式 ---------------- */
+.formula-box{background:linear-gradient(135deg,#EEF2FF,#F5F3FF);border:1px solid #C7D2FE;border-radius:14px;padding:28px 24px;margin:20px 0;text-align:center}
+.formula-main{display:inline-flex;align-items:center;gap:14px;font-size:22px;font-weight:800;color:var(--primary-dark);flex-wrap:wrap;justify-content:center}
+.formula-main .frac{display:inline-flex;flex-direction:column;align-items:center;gap:2px;font-size:17px}
+.frac .num{padding:0 8px 6px;border-bottom:2px solid var(--primary-dark)}
+.frac .den{padding-top:4px}
+
+/* 六步口诀流 */
+.mnemonic-flow{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0;justify-content:center}
+.mn-item{flex:1;min-width:130px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 14px;text-align:center;box-shadow:var(--shadow);position:relative}
+.mn-item .mn-i{width:30px;height:30px;line-height:30px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;font-size:14px;margin:0 auto 8px}
+.mn-item .mn-t{font-size:15px;font-weight:800;color:var(--primary-dark);margin-bottom:4px}
+.mn-item .mn-q{font-size:12px;color:var(--text-secondary);line-height:1.6}
+.mn-item.mn-last{margin-right:0}
+.mn-item.mn-last,.mn-item:last-child{border-color:#C7D2FE;background:#F5F3FF}
+
+/* ---------------- 第2章 · 学情反馈三大外化 ---------------- */
+.outer-card{background:var(--card);border:1px solid var(--border);border-top:4px solid var(--primary);border-radius:12px;padding:20px 22px;margin:16px 0;box-shadow:var(--shadow)}
+.three-grid{display:flex;gap:14px;flex-wrap:wrap;margin:18px 0}
+.three-grid .tg-item{flex:1;min-width:180px;background:#F8FAFC;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:16px}
+.tg-item .tg-h{font-size:15px;font-weight:800;color:var(--primary-dark);margin-bottom:8px}
+
+/* ---------------- 第3章 · S5/S6/S7 三级衔接 ---------------- */
+.lead-q{font-size:16px;font-weight:700;color:var(--primary-dark);background:#EEF2FF;border-left:4px solid var(--primary);padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0;line-height:1.7}
+
+.stage-cards{display:flex;gap:14px;flex-wrap:wrap;margin:20px 0}
+.stage-card{flex:1;min-width:200px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stage-card .stage-tag{position:absolute;top:0;right:0;background:var(--primary);color:#fff;font-size:12px;font-weight:700;padding:4px 12px;border-radius:0 12px 0 12px}
+.stage-card.stage-hot{border:2px solid #F59E0B;background:linear-gradient(160deg,#FFFBEB,#FFFFFF)}
+.stage-card.stage-hot .stage-tag{background:#D97706}
+
+.level-block{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin:16px 0;box-shadow:var(--shadow)}
+.level-block .lb-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--border)}
+.level-block .lb-row:last-child{border-bottom:none}
+.lb-tag{flex:0 0 auto;background:#EEF2FF;color:var(--primary-dark);font-size:12px;font-weight:800;border-radius:6px;padding:4px 10px;white-space:nowrap}
+.lb-body{flex:1;font-size:14px;line-height:1.8;color:#334155}
+.lb-key{color:var(--primary-dark);font-weight:800;background:#EEF2FF;border-radius:4px;padding:1px 6px}
+
+.cap-list{margin:10px 0 0;padding-left:2px;list-style:none}
+.cap-list li{position:relative;padding-left:22px;font-size:13.5px;line-height:1.85;color:#475569;margin-bottom:4px}
+.cap-list li::before{content:'·';position:absolute;left:8px;color:var(--primary);font-weight:800}
+.cap-list.chg li::before{content:'▲';font-size:11px;color:#D97706;left:6px}
+
+.chain-box{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:20px 0}
+.chain-node{flex:1;min-width:150px;background:#F8FAFC;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.chain-node .cn-h{font-size:16px;font-weight:800;color:var(--primary-dark);margin-bottom:4px}
+.chain-node .cn-s{font-size:12px;color:var(--text-secondary);margin-bottom:8px}
+.chain-node .cn-d{font-size:13px;color:#475569;line-height:1.7}
+.chain-node.cn-hot{background:linear-gradient(160deg,#FFFBEB,#FFFFFF);border:2px solid #F59E0B}
+.chain-arrow{flex:0 0 auto;align-self:center;font-size:20px;color:var(--accent);font-weight:800}
+
+/* ---------------- 第4章 · 课包方案 + 推单收单 ---------------- */
+.two-plans{display:flex;gap:16px;flex-wrap:wrap;margin:20px 0}
+.plan-card{flex:1;min-width:240px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 20px;box-shadow:var(--shadow);position:relative}
+.plan-card .plan-h{font-size:17px;font-weight:800;margin-bottom:6px}
+.plan-card .plan-tag{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:3px 12px;margin-bottom:12px}
+.plan-card .plan-body{font-size:14px;line-height:1.9;color:#475569}
+.plan-card .plan-tip{margin-top:14px;font-size:13px;background:#F8FAFC;border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 6px 6px 0;color:#92400E;line-height:1.7}
+.plan-card.plan-a{border-top:4px solid var(--primary)}
+.plan-card.plan-a .plan-h{color:var(--primary-dark)}
+.plan-card.plan-a .plan-tag{background:#EEF2FF;color:var(--primary-dark)}
+.plan-card.plan-b{border-top:4px solid var(--accent);background:linear-gradient(160deg,#FFFBEB,#FFFFFF)}
+.plan-card.plan-b .plan-h{color:#B45309}
+.plan-card.plan-b .plan-tag{background:#FEF3C7;color:#B45309}
+
+.persuade-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin:14px 0;box-shadow:var(--shadow)}
+.persuade-card .pc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.persuade-card .pc-num{flex:0 0 auto;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;font-size:14px}
+.persuade-card .pc-logic{font-size:14px;line-height:1.9;color:#475569;padding-left:38px}
+.persuade-card .pc-key{display:inline-block;background:var(--accent-light);color:#92400E;font-weight:800;border-radius:6px;padding:2px 8px;margin:0 2px}
+
+.attn-list{margin:16px 0;padding:0;list-style:none;counter-reset:attn}
+.attn-item{display:flex;gap:12px;align-items:flex-start;background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:14px 16px;margin-bottom:10px;font-size:14px;line-height:1.8;color:#7C2D12}
+.attn-item .attn-n{flex:0 0 auto;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:#D97706;color:#fff;font-weight:800;font-size:13px}
+
+/* ---------------- 第5章 · 异议处理 ---------------- */
+.qa-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin:16px 0;box-shadow:var(--shadow)}
+.qa-card .qa-q{font-size:15px;font-weight:800;color:#B91C1C;background:#FEF2F2;border-left:4px solid #DC2626;padding:12px 16px;border-radius:0 8px 8px 0;line-height:1.7;margin-bottom:14px}
+.qa-card .qa-a{font-size:14px;line-height:1.95;color:#334155}
+.qa-card .qa-key{display:inline-block;background:#ECFDF5;color:#065F46;font-weight:800;border-radius:6px;padding:2px 8px;margin:0 2px}
+
+/* ---------------- 第6章 · 学习反馈与复习引导 ---------------- */
+.three-flow{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;margin:20px 0}
+.three-flow .tf-item{flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-top:4px solid var(--primary);border-radius:12px;padding:18px 16px;box-shadow:var(--shadow)}
+.tf-item .tf-n{width:28px;height:28px;line-height:28px;text-align:center;border-radius:8px;background:var(--primary-light);color:var(--primary-dark);font-weight:800;font-size:14px;margin-bottom:8px}
+.tf-item .tf-h{font-size:15px;font-weight:800;color:var(--primary-dark);margin-bottom:8px}
+.tf-item .tf-b{font-size:13.5px;line-height:1.85;color:#475569}
+.tf-item .tf-tip{margin-top:10px;font-size:12.5px;background:#FFFBEB;border-left:3px solid var(--accent);padding:8px 10px;border-radius:0 6px 6px 0;color:#92400E;line-height:1.7}
+.three-flow .tf-arrow{flex:0 0 auto;align-self:center;font-size:20px;color:var(--accent);font-weight:800}
+
+/* S1-S9 九级速查库（JS 渲染的折叠卡片） */
+#levelLibrary{margin:16px 0}
+.level-grid{display:flex;flex-direction:column;gap:12px}
+.level-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.level-card.is-hot{border:2px solid #F59E0B}
+.level-card-h{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;user-select:none;background:#F8FAFC;flex-wrap:wrap}
+.level-card.is-hot .level-card-h{background:linear-gradient(160deg,#FFFBEB,#FFFFFF)}
+.level-card-h:hover{background:#EEF2FF}
+.level-card.is-hot .level-card-h:hover{background:#FEF3C7}
+.level-card-h .lv-badge{flex:0 0 auto;width:44px;height:44px;line-height:44px;text-align:center;border-radius:10px;background:var(--primary);color:#fff;font-weight:800;font-size:16px}
+.level-card.is-hot .lv-badge{background:#D97706}
+.level-card-h .lv-title{flex:1;min-width:120px}
+.level-card-h .lv-title b{display:block;font-size:15px;font-weight:800;color:var(--text)}
+.level-card-h .lv-title span{font-size:12.5px;color:var(--text-secondary)}
+.level-card-h .lv-caret{flex:0 0 auto;font-size:14px;color:var(--text-secondary);transition:transform .2s}
+.level-card.open .level-card-h .lv-caret{transform:rotate(180deg)}
+.level-card-body{display:none;padding:0 18px 18px;font-size:14px;line-height:1.9;color:#334155}
+.level-card.open .level-card-body{display:block}
+.level-card-body .lv-sec{margin-top:14px}
+.level-card-body .lv-sec-h{font-size:13.5px;font-weight:800;color:var(--primary-dark);margin-bottom:6px}
+.level-card-body .lv-stuck{background:#FEF2F2;border-left:3px solid #DC2626;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;font-size:13.5px;line-height:1.8}
+.level-card-body .lv-stuck b{color:#B91C1C}
+.level-card-body .lv-fix{color:#065F46}
+.level-card-body ul{margin:6px 0 0;padding-left:20px}
+.level-card-body li{font-size:13.5px;line-height:1.85;color:#475569;margin-bottom:3px}
+.lv-tip{margin-top:12px;font-size:12.5px;background:#EEF2FF;border-radius:8px;padding:10px 12px;color:var(--primary-dark);line-height:1.75}
+
+/* UPSC 闭环卡 */
+.upsc-grid{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
+.upsc-grid .upsc-item{flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 16px;text-align:center;box-shadow:var(--shadow)}
+.upsc-item .upsc-letter{width:40px;height:40px;line-height:40px;margin:0 auto 10px;border-radius:12px;background:var(--primary);color:#fff;font-weight:800;font-size:20px}
+.upsc-item .upsc-h{font-size:14px;font-weight:800;color:var(--primary-dark);margin-bottom:6px}
+.upsc-item p{font-size:12.5px;color:var(--text-secondary);line-height:1.7}
+
+/* 结课四件事 */
+.clear-cards{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
+.clear-card{flex:1;min-width:170px;background:#F8FAFC;border:1px solid var(--border);border-radius:12px;padding:18px 16px}
+.clear-card .cc-icon{font-size:24px;margin-bottom:8px}
+.clear-card .cc-h{font-size:14px;font-weight:800;color:var(--primary-dark);margin-bottom:6px}
+.clear-card p{font-size:13px;color:#475569;line-height:1.8}
+
+/* 六步闭合核对 */
+.six-closure{display:flex;flex-direction:column;gap:8px;margin:18px 0}
+.six-closure .sc-item{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-left:4px solid var(--success);border-radius:0 10px 10px 0;padding:12px 16px}
+.sc-item .sc-n{flex:0 0 auto;width:26px;height:26px;line-height:26px;text-align:center;border-radius:50%;background:var(--success);color:#fff;font-weight:800;font-size:13px}
+.sc-item .sc-d{flex:1;font-size:13.5px;line-height:1.8;color:#334155}
+
+/* 备考任务卡（Role Play） */
+.exam-paper{background:var(--card);border:2px solid #C7D2FE;border-radius:14px;padding:24px 26px;margin:20px 0;box-shadow:var(--shadow)}
+.exam-paper .ep-title{font-size:18px;font-weight:800;color:var(--primary-dark);text-align:center;padding-bottom:14px;border-bottom:2px dashed #C7D2FE;margin-bottom:18px}
+.exam-paper .ep-sec{margin-bottom:18px}
+.exam-paper .ep-h{font-size:15px;font-weight:800;color:var(--primary-dark);margin-bottom:8px}
+.exam-paper .ep-body{font-size:14px;line-height:1.95;color:#334155}
+.task-checklist{margin:14px 0;padding:0;list-style:none}
+.tc-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;font-size:13.5px;line-height:1.8;color:#334155}
+.tc-item .tc-box{flex:0 0 auto;width:18px;height:18px;border:2px solid var(--primary);border-radius:4px;margin-top:2px}
+
+/* ---------------- 终极考核 · 填空题 ---------------- */
+.fill-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);padding:24px 28px;margin:16px 0;box-shadow:var(--shadow)}
+.fill-card.ok{border-color:var(--success);background:#F6FEFB}
+.fill-card .quiz-question{margin-bottom:14px}
+.fill-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.fill-input{flex:1;min-width:180px;padding:12px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-family:inherit;line-height:1.5}
+.fill-input:focus{border-color:var(--primary-light);outline:none;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.fill-input:disabled{background:#F1F5F9;color:#065F46;font-weight:600;border-color:#A7F3D0}
+.fill-hint{display:block;margin-top:8px;color:#92400E;background:#FFFBEB;border-left:3px solid var(--accent);padding:8px 12px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7}
+
+/* 章节测验「答错重做」 */
+.quiz-retry{margin-top:10px}
+.quiz-retry .btn{margin-left:0}
+
+/* ================= 移动端（≤1024px） ================= */
+@media (max-width:1024px){
+  .three-grid,.stage-cards,.two-plans,.chain-box,.three-flow,.upsc-grid,.clear-cards,.mnemonic-flow{flex-direction:column}
+  .stage-card,.plan-card,.tg-item,.chain-node,.tf-item,.upsc-item,.clear-card,.mn-item{min-width:0}
+  .chain-arrow,.three-flow .tf-arrow{transform:rotate(90deg);align-self:center}
+  .script-tpl,.quote-line,.reflect-box,.activate-box{font-size:13px;padding:14px 16px}
+  .formula-main{font-size:17px}
+  table{font-size:12px}
+  table th,table td{padding:8px}
+  /* 表头允许换行 + 表格最小宽度，配合 .table-wrap 横向滚动 */
+  table th{white-space:normal}
+  .table-wrap table{min-width:520px}
+
+  .level-block .lb-row{flex-direction:column;gap:6px}
+  .level-card-body .lv-stuck{font-size:12.5px}
+  .exam-paper{padding:18px 16px}
+  .persuade-card .pc-logic{padding-left:0}
+  .six-closure .sc-item{padding:10px 12px}
+
+  /* 移动端：章节按钮固定为底部操作栏 + 预留底部空间，避免遮挡输入区 */
+  .main{padding-bottom:100px}
+  .section-nav-buttons{flex-direction:column;gap:10px;position:sticky;bottom:0;z-index:20;
+    background:var(--bg);padding:12px 0;border-top:1px solid var(--border);margin-top:24px}
+  .section-nav-buttons>div{width:100%}
+  .section-nav-buttons .btn{width:100%;text-align:center;padding:14px 24px;font-size:15px}
+  .dialogue-input-area{padding-bottom:4px}
+
+  /* 填空题在窄屏改竖排，提交按钮占满整行 */
+  .fill-card{padding:18px 16px}
+  .fill-row{flex-direction:column;align-items:stretch}
+  .fill-row .btn,.fill-input{width:100%}
+}
