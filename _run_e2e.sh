@@ -17,6 +17,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# 0) 释放 8123 端口残留（上一门课的 _server.js 可能仍占着端口 → 静默失败跑错页面）
+PID8123=$(netstat -ano 2>/dev/null | grep ':8123 ' | grep LISTENING | awk '{print $5}' | head -1)
+if [ -n "$PID8123" ]; then
+  echo "[port] 8123 被 PID $PID8123 占用，释放中..."
+  taskkill //F //PID "$PID8123" >/dev/null 2>&1
+  sleep 1
+fi
+
 # 1) 静态服务
 "$NODE" _server.js > /tmp/_srv.log 2>&1 &
 SRV_PID=$!
@@ -24,6 +32,14 @@ sleep 2
 CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/index.html")
 echo "[server] http://127.0.0.1:$PORT/index.html -> $CODE"
 [ "$CODE" = "200" ] || { echo "静态服务启动失败"; exit 1; }
+
+# 1.5) 校验返回页标题属于本课程（防止跑的是别的课程页面）
+TITLE=$(curl -s --noproxy '*' "http://127.0.0.1:$PORT/index.html" | grep -o '<title>[^<]*</title>' | head -1)
+echo "[server] $TITLE"
+case "$TITLE" in
+  *续费全流程*) : ;;
+  *) echo "❌ 页面标题不属于本课程，疑似跑错页面：$TITLE"; exit 1 ;;
+esac
 
 # 2) headless Chrome
 rm -rf "$PROF"

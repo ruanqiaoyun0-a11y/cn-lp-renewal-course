@@ -12,8 +12,6 @@ let currentSection = 0;
 let completedSections = new Set();
 let chapterQuizDone = new Array(chapterQuizzes.length).fill(false);
 let chapterQuizAnswers = {};   // { 'chIdx_qi': { selected, isCorrect } }
-let fillAnswers = {};          // { idx: { value, correct } } —— 第 4 章收单动作填空
-let fillDone = false;
 let finalTaskSubmitted = false;
 let finalScore = 0;
 let finalBreakdown = null;
@@ -68,7 +66,6 @@ function init() {
   renderSidebar();
   renderSections();
   renderLevelLibrary();
-  mountFillQuiz(4);       // 第 4 章填空题：挂载进内容里预留的容器 #fillQuizContainer4
   renderCh6ScenarioTabs();// 第 6 章四段阶梯实战演练：挂载进 #ch6ScenarioTabs
   renderWritingDrills();  // 第 6 章三轮话术写作练习：挂载进 #ch6WritingDrills
   loadProgress();
@@ -113,19 +110,13 @@ function renderSections() {
   if (rc) rc.innerHTML = renderRoleplayHTML();
 }
 
-// 章节测验区块：选择题章节渲染选择题；第 4 章额外把填空题挂到 #fillQuizContainer4
+// 章节测验区块：选择题章节渲染选择题
 function quizBlockFor(i, s) {
   let h = '';
-  const hasQuiz = (s.type === 'content_quiz' || s.type === 'content_quiz_fill')
+  const hasQuiz = s.type === 'content_quiz'
     && chapterQuizzes[i] && chapterQuizzes[i].length > 0;
   if (hasQuiz) h += renderChapterQuiz(i);
   return h;
-}
-
-// 填空题挂载：把题库渲染进内容里预留的容器（第 4 章，DOM 里 id="fillQuizContainer4"）
-function mountFillQuiz(chapterNo) {
-  const box = document.getElementById('fillQuizContainer' + chapterNo);
-  if (box) box.innerHTML = renderFillQuiz();
 }
 
 // ============================================================
@@ -252,133 +243,6 @@ function refreshChapterQuizStatus(chIdx) {
 }
 
 // ============================================================
-// 填空题（收单动作关键词作答，答错可重填，不直接给答案）
-// ============================================================
-function normFill(s) {
-  return String(s === undefined || s === null ? '' : s)
-    .toLowerCase()
-    .replace(/[\s\u3000]+/g, '')
-    .replace(/[，。、；：！？,.;:!?"'“”‘’（）()【】\[\]《》<>·—－-]/g, '')
-    .replace(/％/g, '%');
-}
-
-function renderFillQuiz() {
-  const fills = APP.finalFills || [];
-  if (!fills.length) return '';
-  return '<div class="card" style="border-top:4px solid var(--accent);" id="fillwrap">' +
-    '<h2 style="margin-bottom:8px;">✍️ 填空题 · 写出带付话术的关键动作（共 ' + fills.length + ' 题）</h2>' +
-    '<p style="margin:0 0 12px 0;font-size:13px;color:var(--text-secondary);background:#FFF7ED;border-left:3px solid #F59E0B;padding:8px 12px;border-radius:4px">填写关键词即可，系统会自动忽略空格与标点。答错会给出知识点提示，可以反复重填。全部答对后解锁下一章。</p>' +
-    fills.map((f, i) => {
-      const rec = fillAnswers[i];
-      const ok = rec && rec.correct;
-      return '<div class="fill-card' + (ok ? ' ok' : '') + '" id="fill-' + i + '" data-answered="' + (ok ? 'true' : 'false') + '">' +
-        '<div class="quiz-question">第 ' + (i + 1) + ' 题：' + escapeHtml(f.q) + '</div>' +
-        '<div class="fill-row">' +
-          '<input class="fill-input" id="fillInput-' + i + '" type="text" autocomplete="off" ' +
-            'placeholder="' + escapeHtml(f.placeholder || '填写关键词') + '" ' +
-            (ok ? 'disabled value="' + escapeHtml(rec.value) + '"' : '') +
-            ' onkeypress="if(event.key===\'Enter\')submitFill(' + i + ')">' +
-          (ok ? '' : '<button class="btn" id="fillBtn-' + i + '" onclick="submitFill(' + i + ')">提交</button>') +
-        '</div>' +
-        '<div class="quiz-feedback' + (ok ? ' show correct' : '') + '" id="fillFeedback-' + i + '">' +
-          (ok ? '✅ 回答正确！' : '') +
-        '</div>' +
-      '</div>';
-    }).join('') +
-    '<div id="fillstatus" style="text-align:center;margin-top:8px;padding:12px;border-radius:8px;font-size:14px;background:' +
-      (fillAllDone() ? '#ECFDF5' : '#F8FAFC') + ';">' +
-      (fillAllDone()
-        ? '<span style="color:#065F46;font-weight:600;">✅ 填空题已全部通过！</span>'
-        : '<span style="color:#64748B;">📋 请依次填写完成全部填空题</span>') +
-    '</div></div>';
-}
-
-function fillAllDone() {
-  const fills = APP.finalFills || [];
-  return fills.length > 0 && fills.every((f, i) => fillAnswers[i] && fillAnswers[i].correct);
-}
-
-function submitFill(idx) {
-  const f = (APP.finalFills || [])[idx];
-  const card = document.getElementById('fill-' + idx);
-  if (!f || !card || card.dataset.answered === 'true') return;
-  const input = document.getElementById('fillInput-' + idx);
-  const fb = document.getElementById('fillFeedback-' + idx);
-  const raw = input.value;
-  if (!normFill(raw)) {
-    fb.innerHTML = '请先填写答案再提交。';
-    fb.classList.add('show', 'wrong');
-    input.focus();
-    return;
-  }
-  const ok = f.answer.some(a => normFill(a) === normFill(raw));
-  if (ok) {
-    card.dataset.answered = 'true';
-    card.classList.add('ok');
-    input.disabled = true;
-    fillAnswers[idx] = { value: raw, correct: true };
-    fb.innerHTML = '✅ 回答正确！';
-    fb.classList.remove('wrong');
-    fb.classList.add('show', 'correct');
-    const btn = document.getElementById('fillBtn-' + idx);
-    if (btn) btn.remove();
-    showToast('✅ 第 ' + (idx + 1) + ' 题回答正确', 'success');
-    checkFillComplete();
-    saveProgress();
-  } else {
-    // 学习者红线：不展示正确答案，只给知识点提示，允许反复重填
-    fb.innerHTML = '❌ 这一空还不对。<span class="fill-hint">💡 ' + escapeHtml(f.hint) + '</span>' +
-      '<div class="quiz-retry"><button class="btn btn-outline btn-sm" onclick="resetFill(' + idx + ')">清空重填</button></div>';
-    fb.classList.remove('correct');
-    fb.classList.add('show', 'wrong');
-  }
-}
-
-function resetFill(idx) {
-  const card = document.getElementById('fill-' + idx);
-  if (!card || card.dataset.answered === 'true') return;
-  const input = document.getElementById('fillInput-' + idx);
-  input.value = '';
-  input.focus();
-  const fb = document.getElementById('fillFeedback-' + idx);
-  fb.classList.remove('show', 'wrong', 'correct');
-  fb.innerHTML = '';
-}
-
-function checkFillComplete() {
-  const allDone = fillAllDone();
-  const statusEl = document.getElementById('fillstatus');
-  if (statusEl) {
-    statusEl.style.background = allDone ? '#ECFDF5' : '#F8FAFC';
-    statusEl.innerHTML = allDone
-      ? '<span style="color:#065F46;font-weight:600;">✅ 填空题已全部通过！</span>'
-      : '<span style="color:#64748B;">📋 请依次填写完成全部填空题</span>';
-  }
-  if (allDone && !fillDone) showToast('🎉 填空题已全部通过！', 'success');
-  fillDone = allDone;
-  updateSidebarLocks();
-}
-
-function restoreFillUI() {
-  const fills = APP.finalFills || [];
-  for (let i = 0; i < fills.length; i++) {
-    const rec = fillAnswers[i];
-    if (!rec) continue;
-    const card = document.getElementById('fill-' + i);
-    const input = document.getElementById('fillInput-' + i);
-    const fb = document.getElementById('fillFeedback-' + i);
-    if (rec.correct) {
-      if (card) { card.dataset.answered = 'true'; card.classList.add('ok'); }
-      if (input) { input.value = rec.value; input.disabled = true; }
-      const btn = document.getElementById('fillBtn-' + i);
-      if (btn) btn.remove();
-      if (fb) { fb.innerHTML = '✅ 回答正确！'; fb.classList.add('show', 'correct'); }
-    }
-  }
-  checkFillComplete();
-}
-
-// ============================================================
 // 第 6 章 · S1-S9 九级速查库（折叠卡片，S5/S6/S7 为热点）
 // ============================================================
 function renderLevelLibrary() {
@@ -424,8 +288,7 @@ function canNavigateTo(index) {
   if (index >= 1 && !chapterQuizDone[0]) return { ok: false, msg: '请先完成第 1 章的所有测验题（全部答对）' };
   if (index >= 2 && !chapterQuizDone[1]) return { ok: false, msg: '请先完成第 2 章的所有测验题（全部答对）' };
   if (index >= 3 && !chapterQuizDone[2]) return { ok: false, msg: '请先完成第 3 章的所有测验题（全部答对）' };
-  if (index >= 4 && !chapterQuizDone[3]) return { ok: false, msg: '请先完成第 4 章的测验题与填空题（全部答对）' };
-  if (index >= 4 && !fillAllDone()) return { ok: false, msg: '请先完成第 4 章的填空题（全部答对）' };
+  if (index >= 4 && !chapterQuizDone[3]) return { ok: false, msg: '请先完成第 4 章的所有测验题（全部答对）' };
   if (index >= 5 && !chapterQuizDone[4]) return { ok: false, msg: '请先完成第 5 章的所有测验题（全部答对）' };
   return { ok: true };
 }
@@ -455,18 +318,10 @@ function markComplete(index) {
   checkCertificate();
 }
 
-// 终极考核 = 第 4 章填空题（收单动作） + AI 家长自由对话评分
-// 说明：本课第 6 章为纯内容章（学习反馈与复习引导），不设综合选择题；
-//      15 道选择题分散在第 1/2/3/4/5 章，各章「全部答对」即解锁下一章。
-function finalQuizDone() {
-  // 末章若有测验题，需全部答对；本课末章无题，视为已满足
-  const qs = chapterQuizzes[courseData.sections.length - 1] || [];
-  return qs.length === 0 || !!chapterQuizDone[courseData.sections.length - 1];
-}
-function finalFillsDone() { return fillAllDone(); }
-
+// 终极考核 = AI 家长自由对话评分（第 6 章为纯内容章，不设综合选择题）
+// 说明：选择题分散在第 1/2/3/4/5 章，各章「全部答对」即解锁下一章；
+//      第 4 章含 6 道选择题（3 道流程题 + 3 道带付话术题）。
 function tryCompleteCourse(index) {
-  if (!finalFillsDone()) { showToast('请先完成第 4 章的填空题（全部答对）', 'warning'); return; }
   if (!finalTaskSubmitted) { showToast('请先完成终极考核的 AI 家长对话并提交评分', 'warning'); return; }
   if (finalScore < 60) { showToast('AI 对话评分尚未通过，请点击「重新开始」再试一次', 'warning'); return; }
   markComplete(index);
@@ -1301,8 +1156,6 @@ function saveProgress() {
     completedSections: [...completedSections],
     chapterQuizDone: chapterQuizDone,
     chapterQuizAnswers: chapterQuizAnswers,
-    fillAnswers: fillAnswers,
-    fillDone: fillDone,
     finalTaskSubmitted: finalTaskSubmitted,
     finalScore: finalScore,
     finalBreakdown: finalBreakdown,
@@ -1327,8 +1180,6 @@ function loadProgress() {
       chapterQuizDone = saved.chapterQuizDone || new Array(chapterQuizzes.length).fill(false);
       if (chapterQuizDone.length !== chapterQuizzes.length) chapterQuizDone = new Array(chapterQuizzes.length).fill(false);
       chapterQuizAnswers = saved.chapterQuizAnswers || {};
-      fillAnswers = saved.fillAnswers || {};
-      fillDone = false;
       finalTaskSubmitted = saved.finalTaskSubmitted || false;
       finalScore = saved.finalScore || 0;
       finalBreakdown = saved.finalBreakdown || null;
@@ -1354,7 +1205,6 @@ function loadProgress() {
           refreshChapterQuizStatus(i);
         }
       }
-      restoreFillUI();
       restoreFinalConversation();
       // 第 6 章练习区：Tab 已按 scenarioActiveTab 渲染，这里恢复对话与写作状态
       (APP.ch6DialogueScenarios || []).forEach(s => restoreScenarioUI(s.id));
@@ -1379,16 +1229,14 @@ function loadProgress() {
 // ============================================================
 function checkCertificate() {
   const allDone = completedSections.size >= courseData.sections.length
-    && finalFillsDone() && finalTaskSubmitted && finalScore >= 60;
+    && finalTaskSubmitted && finalScore >= 60;
   if (!allDone) return;
   setTimeout(() => {
     showToast('🏆 恭喜完成全部课程！点击领取结业证书', 'success');
-    // 证书口径：章节测验（15 题）+ 收单填空（3 题）+ AI 对话得分
+    // 证书口径：章节测验（18 题）+ AI 对话得分
     const mcqTotal = chapterQuizzes.reduce((n, qs) => n + (qs ? qs.length : 0), 0);
-    const fills = APP.finalFills || [];
-    const fillN = fills.filter((f, i) => fillAnswers[i] && fillAnswers[i].correct).length;
     document.getElementById('certScore').textContent =
-      '综合评定：通过（章节测验 ' + mcqTotal + '/' + mcqTotal + ' · 填空题 ' + fillN + '/' + fills.length + '）';
+      '综合评定：通过（章节测验 ' + mcqTotal + '/' + mcqTotal + '）';
     document.getElementById('certFinalScore').textContent = 'AI 对话考核得分：' + finalScore + ' 分';
     document.getElementById('certDate').textContent = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
     const savedName = localStorage.getItem(LS_PREFIX + '_student_name');

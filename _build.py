@@ -33,7 +33,6 @@ def build_app_data():
         'allowedHosts': ['ruanqiaoyun0-a11y.github.io', 'localhost', '127.0.0.1'],
         'sections': C.SECTIONS,
         'chapterQuizzes': C.CHAPTER_QUIZZES,
-        'finalFills': C.CH4_FILLS,
         'levelLibrary': C.LEVEL_LIBRARY,
         'finalSystemPrompt': C.FINAL_SYSTEM_PROMPT,
         'scoringPrompt': C.SCORING_PROMPT,
@@ -86,8 +85,6 @@ def main():
         problems.append('script 标签缺失')
     if 'quiz-locked-hint' not in html:
         problems.append('缺少串行锁定样式/提示')
-    if 'fillQuizContainer4' not in html:
-        problems.append('缺少第 4 章填空题挂载点 #fillQuizContainer4')
     if 'levelLibrary' not in html:
         problems.append('缺少第 6 章 S1-S9 速查库挂载点 #levelLibrary')
     if 'ch6ScenarioTabs' not in html:
@@ -113,14 +110,9 @@ def main():
                 problems.append('第 %d 章第 %d 题字段缺失' % (i + 1, qi + 1))
             elif not (0 <= q['correct'] < len(q['opts'])):
                 problems.append('第 %d 章第 %d 题 correct 越界' % (i + 1, qi + 1))
-    # 填空题校验
-    if not C.CH4_FILLS:
-        problems.append('缺少第 4 章填空题数据')
-    for fi, f in enumerate(C.CH4_FILLS):
-        if not all(k in f for k in ('q', 'answer', 'hint')):
-            problems.append('第 %d 道填空字段缺失' % (fi + 1))
-        elif not f['answer']:
-            problems.append('第 %d 道填空没有可接受答案' % (fi + 1))
+    # 第 4 章题量断言：3 道流程题 + 3 道带付话术题（v1.2.1 由填空题改造而来）
+    if len(C.CHAPTER_QUIZZES[3]) != 6:
+        problems.append('第 4 章测验题数不为 6（当前 %d）' % len(C.CHAPTER_QUIZZES[3]))
     # 九级速查库校验
     if len(C.LEVEL_LIBRARY) != 9:
         problems.append('S1-S9 速查库级别数不为 9（当前 %d）' % len(C.LEVEL_LIBRARY))
@@ -129,10 +121,20 @@ def main():
             problems.append('速查库 %s 字段缺失' % lv.get('level', '?'))
     if 'level-card' not in js:
         problems.append('缺少速查库折叠卡片渲染模板')
-    if 'fillInput-' not in js:
-        problems.append('缺少填空题 DOM 生成模板')
-    if 'submitFill' not in js:
-        problems.append('缺少填空题提交处理函数')
+
+    # ---------- 残留扫描：填空题已整体移除（v1.2.1），任何相关残留都说明清理不干净 ----------
+    for residue in ('fillQuizContainer', 'fillInput-', 'submitFill', 'renderFillQuiz',
+                    'fillAllDone', 'restoreFillUI', 'fillAnswers', 'fillDone',
+                    'finalFills', 'normFill', 'fill-card', 'fill-input',
+                    'content_quiz_fill', 'CH4_FILLS', '填空'):
+        if residue in js:
+            problems.append('JS 中残留填空题相关代码：%s' % residue)
+        if residue in html.replace(js, ''):
+            problems.append('HTML/数据中残留填空题相关内容：%s' % residue)
+    if not hasattr(C, 'CH4_FILLS'):
+        pass  # 期望状态：_content.py 中 CH4_FILLS 已删除
+    else:
+        problems.append('_content.py 中仍存在 CH4_FILLS，应整体删除')
 
     # ---------- 第 6 章 · 四段阶梯实战演练 ----------
     if len(C.CH6_DIALOGUE_SCENARIOS) != 4:
@@ -207,8 +209,8 @@ def main():
         problems.append('严重：index.html 中出现明文密钥 sk-...')
 
     print('章节数：', len(C.SECTIONS))
-    print('选择题总数：', sum(len(x) for x in C.CHAPTER_QUIZZES))
-    print('填空题总数（第 4 章）：', len(C.CH4_FILLS))
+    print('选择题总数：', sum(len(x) for x in C.CHAPTER_QUIZZES),
+          '（各章：', '/'.join(str(len(x)) for x in C.CHAPTER_QUIZZES), '）')
     print('九级速查库：', len(C.LEVEL_LIBRARY), '级（重点 S5/S6/S7）')
     print('第 6 章四段演练：', len(C.CH6_DIALOGUE_SCENARIOS), '段',
           '（最少轮数：', '/'.join(str(s['min_rounds']) for s in C.CH6_DIALOGUE_SCENARIOS), '）')
