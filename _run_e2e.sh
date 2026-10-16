@@ -4,7 +4,8 @@
 set -u
 cd "$(dirname "$0")" || exit 1
 
-NODE="C:/Users/PC/.workbuddy/binaries/node/versions/22.22.2-3/node.exe"
+NODE="C:/Users/PC/.workbuddy/binaries/node/versions/22.22.2-6/node.exe"
+[ -x "$NODE" ] || NODE="node"
 CHROME="/c/Program Files/Google/Chrome/Application/chrome.exe"
 PROF="C:/Users/PC/AppData/Local/Temp/_chrome_renewal_prof"
 PORT=8123
@@ -29,7 +30,7 @@ fi
 "$NODE" _server.js > /tmp/_srv.log 2>&1 &
 SRV_PID=$!
 sleep 2
-CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/index.html")
+CODE=$(curl -s --noproxy '*' -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/index.html")
 echo "[server] http://127.0.0.1:$PORT/index.html -> $CODE"
 [ "$CODE" = "200" ] || { echo "静态服务启动失败"; exit 1; }
 
