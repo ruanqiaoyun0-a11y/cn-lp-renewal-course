@@ -169,6 +169,40 @@ def main():
         if '洋阳' in text:
             problems.append('%s 中残留旧人名「洋阳」（应为「洋洋」）' % name)
 
+    # ---------- 10 月新框架口径断言：旧活动词 0 残留、新锚点必在 ----------
+    def _course_text():
+        parts = []
+        for s in C.SECTIONS:
+            parts.append(str(s.get('content', '')))
+        for qs in C.CHAPTER_QUIZZES:
+            for q in qs:
+                parts.append(str(q.get('q', '')))
+                parts.extend(str(o) for o in q.get('opts', []))
+                parts.append(str(q.get('feedback_correct', '')))
+                parts.append(str(q.get('feedback_wrong', '')))
+        for wd in C.CH6_WRITING_DRILLS:
+            for k in ('scene', 'student_info', 'task', 'placeholder', 'ref_answer', 'ref_tips'):
+                parts.append(str(wd.get(k, '')))
+            for dim in wd.get('dims', []):
+                parts.append(str(dim.get('name', '')))
+                parts.extend(str(k) for k in dim.get('kw', []))
+        parts.append(str(C.FINAL_SYSTEM_PROMPT))
+        for t in C.TOPIC_TAGS:
+            parts.append(str(t.get('name', '')))
+            parts.extend(str(k) for k in t.get('kw', []))
+        return '\n'.join(parts)
+
+    _ct = _course_text()
+    # 旧口径组合词 0 残留（「每年除了开学季」为维度二原文的合理对比句，不在此列）
+    for old in ('开学季提前购', '开学季的优惠', '开学季活动', '开学季六步口诀', '开学季核心原则',
+                '开学季备用锦囊', '开学季补充', '正值开学季', '开学季首轮', '开学季谈单', '提前购', '限时优惠'):
+        if old in _ct:
+            problems.append('残留旧活动口径「%s」' % old)
+    # 新锚点必在
+    for need in ('期中', '【当期活动名称】', '保价', '下半学期', '双 11', '十一假期'):
+        if need not in _ct:
+            problems.append('缺少 10 月新口径关键内容「%s」' % need)
+
     # 终极考核聊天：泛化函数 + 兼容层必须同时存在
     if 'function renderChatMessage' not in js:
         problems.append('缺少通用聊天渲染函数 renderChatMessage')
