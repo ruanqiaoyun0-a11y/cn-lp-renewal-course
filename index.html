@@ -664,11 +664,16 @@ function initVideoTracking() {
 
 function attachVideoTracking(v, meta) {
   v.dataset.videoIdx = String(meta.idx);
-  v.addEventListener('seeking', () => { renderVideoProgress(meta); });
-  v.addEventListener('timeupdate', () => {
+  const trackPos = () => {
     const t = v.currentTime;
     if (!videoMaxTime[meta.idx] || t > videoMaxTime[meta.idx]) videoMaxTime[meta.idx] = t;
     videoLastPos[meta.idx] = t;
+  };
+  v.addEventListener('seeking', () => { renderVideoProgress(meta); });
+  // 拖动后即使不播放也要记录位置（seeked 在拖动落点触发，timeupdate 只在播放中触发）
+  v.addEventListener('seeked', () => { trackPos(); renderVideoProgress(meta); saveProgress(); });
+  v.addEventListener('timeupdate', () => {
+    trackPos();
     renderVideoProgress(meta);
   });
   v.addEventListener('loadedmetadata', () => { renderVideoProgress(meta); });
@@ -709,9 +714,10 @@ function renderVideoProgress(meta) {
 }
 
 // ---- 章节时间跟踪：计划时长 vs 实际停留用时 ----
+let planInterval = null;
 function startPlanTracking() {
   courseData.sections.forEach((s, i) => renderChapterPlan(i));
-  setInterval(() => {
+  planInterval = setInterval(() => {
     if (document.hidden) return;
     const cur = currentSection;
     chapterTimeSpent[cur] = (chapterTimeSpent[cur] || 0) + 1;
@@ -1569,6 +1575,7 @@ function restoreChapterQuizUI() {
 }
 
 function saveProgress() {
+  if (window.__resetInProgress) return; // 重置流程中禁止任何写回
   const state = {
     completedSections: [...completedSections],
     chapterQuizDone: chapterQuizDone,
@@ -1715,13 +1722,18 @@ function initResumeFlow() {
   showResumeCard();
 }
 function resetAllProgress() {
+  // 先停掉所有会写盘的定时器并置抑制标志：
+  // location.reload() 后页面在网络等待期仍存活，定时器若继续跑，
+  // 一次 saveProgress() 就会把旧内存态写回 localStorage（线上慢网络必现）。
+  try { window.__resetInProgress = true; } catch (e) {}
+  try { clearInterval(timerInterval); } catch (e) {}
+  try { clearInterval(planInterval); } catch (e) {}
   try {
     getResetLsKeys().forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
     try { sessionStorage.removeItem(RESUME_FLAG_KEY); } catch (e) {}
     try { sessionStorage.setItem(LS_PREFIX + '_just_reset', '1'); } catch (e) {}
   } catch (e) {}
-  // 必须同步触发刷新：计划用时跟踪每 5 秒 saveProgress() 一次，
-  // 若清 key 与 reload 之间留有异步窗口，旧内存态会被写回导致「重置失败」
+  // 同步触发刷新，不给任何异步写回留窗口
   location.reload();
 }
 function initResetToast() {
