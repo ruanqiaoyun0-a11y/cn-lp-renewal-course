@@ -125,6 +125,15 @@ def main():
             problems.append('速查库 %s 字段缺失' % lv.get('level', '?'))
     if 'level-card' not in js:
         problems.append('缺少速查库折叠卡片渲染模板')
+    # 视频进度跟踪 + 章节时间跟踪（所有微课统一：可自由拖动 + 计划时长）
+    for token in ('initVideoTracking', 'renderVideoProgress', 'videoLastPos',
+                  "'seeking'", 'sectionPlanSeconds', 'chapterTimeSpent',
+                  'renderChapterPlan', 'startPlanTracking', 'planMinutes'):
+        if token not in js:
+            problems.append('缺少视频进度/章节时间跟踪逻辑：%s' % token)
+    for token in ('video-progress-info', 'vp-fill', 'chapter-plan-bar', 'cp-fill'):
+        if token not in css:
+            problems.append('缺少视频进度/章节计划样式：%s' % token)
 
     # ---------- 残留扫描：填空题已整体移除（v1.2.1），任何相关残留都说明清理不干净 ----------
     for residue in ('fillQuizContainer', 'fillInput-', 'submitFill', 'renderFillQuiz',

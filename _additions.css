@@ -259,3 +259,32 @@ tr.tr-hot td{background:#FEF3C7!important;font-weight:600;color:#92400E}
   .scenario-card .final-actions{flex-direction:column}
   .scenario-card .final-actions .btn{width:100%;justify-content:center}
 }
+
+/* 视频进度信息条：已看 % / 已看时长 / 剩余时长（进度条可自由拖动回看） */
+.video-progress-info{margin:10px 0 22px;padding:12px 16px;border-radius:8px;
+  background:#F8FAFC;border:1px solid var(--border)}
+.video-progress-info .vp-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary)}
+.video-progress-info .vp-label{font-weight:700;color:var(--text)}
+.video-progress-info .vp-num strong{color:var(--primary);font-size:14px}
+.video-progress-info .vp-left{margin-left:auto;color:var(--text-secondary)}
+.video-progress-info .vp-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:8px}
+.video-progress-info .vp-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .3s ease}
+.video-progress-info .vp-tip{margin-top:8px;font-size:12px;color:var(--text-secondary);line-height:1.6}
+.video-progress-info .vp-hint{font-size:13px;color:var(--text-secondary)}
+
+/* 章节计划时间条：计划时长 vs 实际停留用时 */
+.chapter-plan-bar{margin:0 0 20px;padding:12px 16px;border-radius:8px;
+  background:#EEF2FF;border-left:4px solid var(--primary)}
+.chapter-plan-bar .cp-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:13px;color:var(--text-secondary)}
+.chapter-plan-bar .cp-label{font-weight:700;color:var(--primary-dark,var(--primary))}
+.chapter-plan-bar .cp-spent{font-weight:600;color:var(--text)}
+.chapter-plan-bar .cp-spent.over{color:#B45309}
+.chapter-plan-bar .cp-rest{margin-left:auto;font-size:12px}
+.chapter-plan-bar .cp-track{height:6px;background:#DBEAFE;border-radius:3px;overflow:hidden;margin-top:8px}
+.chapter-plan-bar .cp-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .4s ease}
+.chapter-plan-bar .cp-fill.over{background:#F59E0B}
+.chapter-plan-bar.over{background:#FFF7ED;border-left-color:#F59E0B}
+@media(max-width:1024px){
+  .video-progress-info .vp-left{margin-left:0}
+  .chapter-plan-bar .cp-rest{font-size:12px;margin-left:0}
+}

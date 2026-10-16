@@ -53,6 +53,144 @@ function guardHost() {
   return true;
 }
 
+// ============================================================
+// 视频进度跟踪（本课视频不设门禁，仅记录进度、支持自由拖动回看）
+// ============================================================
+let videoMeta = [];
+let videoMaxTime = {};   // { videoIdx: seconds } —— 观看过的最高位置
+let videoLastPos = {};   // { videoIdx: seconds } —— 最后离开的位置（下次续播）
+
+// 章节时间跟踪：每章计划时长（由 section.duration 解析）+ 实际停留用时
+let sectionPlanSeconds = [];
+let chapterTimeSpent = {};
+let planWarned = {};
+
+// ---- 时间工具 ----
+function fmtTime(sec) {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+function fmtMinSec(sec) {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+  return m > 0 ? (m + ' 分 ' + s + ' 秒') : (s + ' 秒');
+}
+function planMinutes(str) {
+  const s = String(str || '');
+  const m = s.match(/(\d+)\s*(?:[-~～至]\s*(\d+))?\s*分钟/);
+  if (m) return Math.max(parseInt(m[1], 10), m[2] ? parseInt(m[2], 10) : 0);
+  const h = s.match(/(\d+)\s*(?:个)?\s*小时/);
+  if (h) return parseInt(h[1], 10) * 60;
+  return 0;
+}
+
+// 收集页面内所有视频，绑定进度跟踪（允许自由拖动）
+function initVideoTracking() {
+  videoMeta = [];
+  let vi = 0;
+  courseData.sections.forEach((s, chIdx) => {
+    document.querySelectorAll('.section[data-section="' + chIdx + '"] video').forEach((v) => {
+      const meta = { idx: vi, chIdx: chIdx };
+      videoMeta.push(meta);
+      attachVideoTracking(v, meta);
+      vi++;
+    });
+  });
+}
+
+function attachVideoTracking(v, meta) {
+  v.dataset.videoIdx = String(meta.idx);
+  v.addEventListener('seeking', () => { renderVideoProgress(meta); });
+  v.addEventListener('timeupdate', () => {
+    const t = v.currentTime;
+    if (!videoMaxTime[meta.idx] || t > videoMaxTime[meta.idx]) videoMaxTime[meta.idx] = t;
+    videoLastPos[meta.idx] = t;
+    renderVideoProgress(meta);
+  });
+  v.addEventListener('loadedmetadata', () => { renderVideoProgress(meta); });
+  let restored = false;
+  v.addEventListener('play', () => {
+    if (restored) return;
+    restored = true;
+    const last = videoLastPos[meta.idx] || videoMaxTime[meta.idx] || 0;
+    if (last > 2 && Math.abs(v.currentTime - last) > 2) v.currentTime = last;
+  });
+}
+
+// 视频进度信息条：已看 %、已看 / 总时长、剩余时长
+function renderVideoProgress(meta) {
+  const v = document.querySelector('video[data-video-idx="' + meta.idx + '"]');
+  if (!v) return;
+  const wrap = v.closest('.video-wrapper');
+  if (!wrap) return;
+  let box = wrap.querySelector('.video-progress-info');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'video-progress-info';
+    wrap.appendChild(box);
+  }
+  const dur = v.duration;
+  if (!dur || !isFinite(dur) || dur <= 0) { box.innerHTML = '<span class="vp-hint">⏱ 视频加载中…</span>'; return; }
+  const seen = Math.min(videoMaxTime[meta.idx] || v.currentTime || 0, dur);
+  const pct = Math.min(100, Math.round(seen / dur * 100));
+  const left = Math.max(0, dur - seen);
+  if (meta._vpPct === pct) return;
+  meta._vpPct = pct;
+  box.innerHTML =
+    '<div class="vp-row"><span class="vp-label">🎬 观看进度</span>' +
+    '<span class="vp-num">已看 <strong>' + pct + '%</strong> · ' + fmtTime(seen) + ' / ' + fmtTime(dur) + '</span>' +
+    '<span class="vp-left">' + (left > 1 ? '剩余约 ' + fmtTime(left) : '已到片尾') + '</span></div>' +
+    '<div class="vp-track"><div class="vp-fill" style="width:' + pct + '%"></div></div>' +
+    '<div class="vp-tip">进度条可自由拖动，随时回看前面的内容。</div>';
+}
+
+// ---- 章节时间跟踪：计划时长 vs 实际停留用时 ----
+function startPlanTracking() {
+  courseData.sections.forEach((s, i) => renderChapterPlan(i));
+  setInterval(() => {
+    if (document.hidden) return;
+    const cur = currentSection;
+    chapterTimeSpent[cur] = (chapterTimeSpent[cur] || 0) + 1;
+    if (chapterTimeSpent[cur] % 5 === 0) { renderChapterPlan(cur); saveProgress(); }
+    maybeWarnPlan(cur);
+  }, 1000);
+}
+
+function maybeWarnPlan(chIdx) {
+  const plan = sectionPlanSeconds[chIdx] || 0;
+  if (!plan || planWarned[chIdx]) return;
+  if ((chapterTimeSpent[chIdx] || 0) >= plan) {
+    planWarned[chIdx] = true;
+    showToast('⏱ 第 ' + (chIdx + 1) + ' 章已到计划时长（约 ' + Math.round(plan / 60) + ' 分钟），可以继续或先歇一会儿', 'warning');
+    saveProgress();
+  }
+}
+
+function renderChapterPlan(chIdx) {
+  const plan = sectionPlanSeconds[chIdx] || 0;
+  if (!plan) return;
+  const section = document.querySelector('.section[data-section="' + chIdx + '"]');
+  if (!section) return;
+  const spent = chapterTimeSpent[chIdx] || 0;
+  let bar = document.getElementById('chapterplan-' + chIdx);
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'chapter-plan-bar';
+    bar.id = 'chapterplan-' + chIdx;
+    section.insertBefore(bar, section.firstChild);
+  }
+  const pct = Math.min(100, Math.round(spent / plan * 100));
+  const over = spent >= plan;
+  const leftMin = Math.max(0, Math.ceil((plan - spent) / 60));
+  bar.classList.toggle('over', over);
+  bar.innerHTML =
+    '<div class="cp-row"><span class="cp-label">⏱ 本章计划 ' + Math.round(plan / 60) + ' 分钟</span>' +
+    '<span class="cp-spent' + (over ? ' over' : '') + '">已用 ' + fmtMinSec(spent) + '</span>' +
+    '<span class="cp-rest">' + (over ? '已达计划时长，可继续学习' : '还差约 ' + leftMin + ' 分钟') + '</span></div>' +
+    '<div class="cp-track"><div class="cp-fill' + (over ? ' over' : '') + '" style="width:' + pct + '%"></div></div>';
+}
+
 let studySeconds = 0; let timerInterval = null;
 
 // ============================================================
@@ -63,8 +201,12 @@ function init() {
   renderSections();
   renderLevelLibrary();
   renderWritingDrills();  // 第 6 章三轮话术写作练习：挂载进 #ch6WritingDrills
+  initVideoTracking();
+  // 章节计划时长（解析 section.duration），需先于 loadProgress 恢复本章用时
+  sectionPlanSeconds = courseData.sections.map(s => planMinutes(s.duration) * 60);
   loadProgress();
   startTimer();
+  startPlanTracking();
   loadNotes();
 }
 
@@ -300,7 +442,7 @@ function navigateTo(index) {
   if (section) section.classList.add('active');
   const navItem = document.querySelector('.nav-section[data-index="' + index + '"]');
   if (navItem) navItem.classList.add('active');
-  updateProgress(); updateNotesForSection(index); saveProgress();
+  updateProgress(); updateNotesForSection(index); renderChapterPlan(index); saveProgress();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('show');
@@ -875,6 +1017,10 @@ function saveProgress() {
     finalRound: finalRound,
     finalAiScoring: false,
     writings: writings,
+    videoMaxTime: videoMaxTime,
+    videoLastPos: videoLastPos,
+    chapterTimeSpent: chapterTimeSpent,
+    planWarned: planWarned,
     currentSection: currentSection
   };
   try { localStorage.setItem(LS_PREFIX + '_progress', JSON.stringify(state)); } catch (e) {}
@@ -901,6 +1047,10 @@ function loadProgress() {
       finalMessages = saved.finalMessages || [];
       finalRound = saved.finalRound || 0;
       writings = saved.writings || {};
+      videoMaxTime = saved.videoMaxTime || {};
+      videoLastPos = saved.videoLastPos || {};
+      chapterTimeSpent = saved.chapterTimeSpent || {};
+      planWarned = saved.planWarned || {};
       currentSection = saved.currentSection || 0;
       // 兼容旧数据：有完成标记但没有答题记录 → 重置测验状态
       const hasDoneButNoAnswers = chapterQuizDone.some(d => d) && Object.keys(chapterQuizAnswers).length === 0;
@@ -916,6 +1066,7 @@ function loadProgress() {
         }
       }
       restoreFinalConversation();
+      courseData.sections.forEach((s, i) => renderChapterPlan(i));
       // 第 6 章练习区：恢复写作状态
       (APP.ch6WritingDrills || []).forEach(d => restoreWritingUI(d.id));
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
