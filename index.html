@@ -771,6 +771,7 @@ function init() {
   startTimer();
   startPlanTracking();
   loadNotes();
+  initResetToast();  // 重置刷新回来后提示「已重置」（此时无学习记录，不会弹询问层）
   initResumeFlow();  // 多人共用设备：恢复完再询问「继续 / 重新开始」
 }
 
@@ -1717,9 +1718,19 @@ function resetAllProgress() {
   try {
     getResetLsKeys().forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
     try { sessionStorage.removeItem(RESUME_FLAG_KEY); } catch (e) {}
+    try { sessionStorage.setItem(LS_PREFIX + '_just_reset', '1'); } catch (e) {}
   } catch (e) {}
-  try { showToast('学习进度已重置，正在重新开始…', 'success'); } catch (e) {}
-  setTimeout(function () { location.reload(); }, 400); // 必须整页刷新，否则内存态会被 saveProgress 写回
+  // 必须同步触发刷新：计划用时跟踪每 5 秒 saveProgress() 一次，
+  // 若清 key 与 reload 之间留有异步窗口，旧内存态会被写回导致「重置失败」
+  location.reload();
+}
+function initResetToast() {
+  try {
+    if (sessionStorage.getItem(LS_PREFIX + '_just_reset') === '1') {
+      sessionStorage.removeItem(LS_PREFIX + '_just_reset');
+      showToast('学习进度已重置，已为你重新开始', 'success');
+    }
+  } catch (e) {}
 }
 
 // ============================================================

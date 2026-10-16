@@ -205,9 +205,15 @@ def main():
     # ---------- 重置学习进度（多人共用设备） ----------
     for token in ('function hasLearningRecord', 'function initResumeFlow',
                   'function resetAllProgress', 'function openResetConfirm',
-                  'function resumeContinue', "LS_PREFIX + '_resume_choice'"):
+                  'function resumeContinue', "LS_PREFIX + '_resume_choice'",
+                  'function initResetToast', "_just_reset"):
         if token not in js:
             problems.append('缺少重置进度/继续学习逻辑：%s' % token)
+    # 重置必须同步 reload（计划用时跟踪每 5 秒 saveProgress()，异步窗口会把旧内存态写回）
+    if 'function resetAllProgress' in js:
+        seg = js.split('function resetAllProgress', 1)[1].split('function initResetToast', 1)[0]
+        if 'location.reload()' not in seg or 'setTimeout' in seg:
+            problems.append('resetAllProgress 必须同步 location.reload()，不得留异步窗口')
     for token in ('resetOverlay', 'resumeCard', 'resetConfirmCard',
                   'btnResumeContinue', 'btnResumeReset',
                   'btnResetCancel', 'btnResetConfirm', 'btn-reset-progress'):
