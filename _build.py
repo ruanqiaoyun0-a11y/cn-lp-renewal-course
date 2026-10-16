@@ -202,6 +202,24 @@ def main():
     if 'restoreWritingUI' not in js:
         problems.append('缺少写作练习状态恢复函数')
 
+    # ---------- 重置学习进度（多人共用设备） ----------
+    for token in ('function hasLearningRecord', 'function initResumeFlow',
+                  'function resetAllProgress', 'function openResetConfirm',
+                  'function resumeContinue', "LS_PREFIX + '_resume_choice'"):
+        if token not in js:
+            problems.append('缺少重置进度/继续学习逻辑：%s' % token)
+    for token in ('resetOverlay', 'resumeCard', 'resetConfirmCard',
+                  'btnResumeContinue', 'btnResumeReset',
+                  'btnResetCancel', 'btnResetConfirm', 'btn-reset-progress'):
+        if token not in html:
+            problems.append('缺少重置进度弹层/按钮 DOM：%s' % token)
+    for token in ('.reset-overlay', '.reset-modal', '.sidebar-reset', '.btn-reset-danger'):
+        if token not in css:
+            problems.append('缺少重置进度样式：%s' % token)
+    # 重置不得误伤 AI 限流 key
+    if 'getResetLsKeys' in js and 'RATE_LIMIT_KEY' not in js:
+        problems.append('重置逻辑存在但 AI 限流 key 缺失')
+
     # ---------- 练习区红线：不得出现通过线 / 未通过措辞 ----------
     for bad in ('需≥60分', '总分不足60', '未通过（', '不达标，请重新'):
         if bad in js:

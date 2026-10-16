@@ -288,3 +288,19 @@ tr.tr-hot td{background:#FEF3C7!important;font-weight:600;color:#92400E}
   .video-progress-info .vp-left{margin-left:0}
   .chapter-plan-bar .cp-rest{font-size:12px;margin-left:0}
 }
+
+/* ---------- 重置/继续学习进度弹层 + 侧边栏重置按钮（多人共用设备） ---------- */
+.reset-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:1000;justify-content:center;align-items:center;padding:20px}
+.reset-overlay.show{display:flex}
+.reset-modal{background:var(--card);border-radius:var(--radius);padding:32px 28px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.reset-modal .reset-icon{font-size:40px;margin-bottom:8px}
+.reset-modal h2{font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px}
+.reset-modal .reset-desc{font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.8}
+.reset-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.reset-actions .btn{flex:1;min-width:130px}
+.btn-reset-danger{background:var(--danger);color:#fff}
+.btn-reset-danger:hover{background:#B91C1C;transform:translateY(-1px)}
+.btn-outline-reset{background:var(--card);color:var(--danger);border:2px solid var(--danger)}
+.btn-outline-reset:hover{background:#FEF2F2}
+.sidebar-reset{margin:0 20px 12px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid rgba(220,38,38,.45);background:rgba(220,38,38,.12);color:#FCA5A5;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;width:calc(100% - 40px);font-family:inherit}
+.sidebar-reset:hover{background:rgba(220,38,38,.28);color:#fff}

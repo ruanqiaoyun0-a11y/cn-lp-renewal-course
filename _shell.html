@@ -6,6 +6,7 @@
 <div class="study-timer"><span class="timer-icon">⏱</span><div><div class="timer-display" id="timerDisplay">00:00</div><div class="timer-label">学习时长</div></div></div>
 <div class="sidebar-progress"><div class="progress-label"><span>学习进度</span><span id="progressPercent">0%</span></div><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div></div>
 <div class="sidebar-nav" id="sidebarNav"></div>
+<button class="sidebar-reset" id="btn-reset-progress" onclick="openResetConfirm()">↺ 重置学习进度</button>
 <div class="sidebar-footer">豌豆思维 · 国内 LP 培训</div>
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -27,4 +28,26 @@
 <h3>📝 学习笔记 — <span id="notesChapterLabel" style="font-weight:400;font-size:13px;color:var(--text-secondary)"></span></h3>
 <textarea id="notesTextarea" placeholder="在这里记录你的学习心得..."></textarea>
 <button class="btn btn-outline" onclick="toggleNotes()" style="margin-top:12px;width:100%">关闭</button>
+</div>
+
+<!-- 重置/继续学习进度弹层（同一台电脑多人共用场景） -->
+<div class="reset-overlay" id="resetOverlay">
+<div class="reset-modal" id="resumeCard" style="display:none">
+<div class="reset-icon">📖</div>
+<h2>检测到学习记录</h2>
+<p class="reset-desc">这台设备上已有学习进度和笔记。<br>可以接着上次继续，也可以清空后重新开始。</p>
+<div class="reset-actions">
+<button class="btn" id="btnResumeContinue" onclick="resumeContinue()">▶ 继续上次学习</button>
+<button class="btn btn-outline-reset" id="btnResumeReset" onclick="resumeToResetConfirm()">🔄 重新开始</button>
+</div>
+</div>
+<div class="reset-modal" id="resetConfirmCard" style="display:none">
+<div class="reset-icon">⚠️</div>
+<h2>确认重置学习进度？</h2>
+<p class="reset-desc">将清除本设备上的做题记录、笔记、学习时长和证书姓名。<br>清除后无法恢复，请确认这是你想要的操作。</p>
+<div class="reset-actions">
+<button class="btn btn-outline" id="btnResetCancel" onclick="cancelResetConfirm()">取消</button>
+<button class="btn btn-reset-danger" id="btnResetConfirm" onclick="resetAllProgress()">确认重置</button>
+</div>
+</div>
 </div>

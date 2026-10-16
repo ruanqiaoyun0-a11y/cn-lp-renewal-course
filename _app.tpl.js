@@ -208,6 +208,7 @@ function init() {
   startTimer();
   startPlanTracking();
   loadNotes();
+  initResumeFlow();  // 多人共用设备：恢复完再询问「继续 / 重新开始」
 }
 
 function renderSidebar() {
@@ -1082,6 +1083,80 @@ function loadProgress() {
   } catch (e) {
     navigateTo(0);
   }
+}
+
+// ============================================================
+// 重置学习进度（同一台电脑多人共用场景）
+// ============================================================
+const RESUME_FLAG_KEY = LS_PREFIX + '_resume_choice'; // sessionStorage：本会话已选「继续」，不再重复弹
+function getResetLsKeys() {
+  // 刻意保留 LS_PREFIX + '_llm_rate_ts'（AI 限流时间戳）：换人不绕过 AI 每小时限流
+  return [LS_PREFIX + '_progress', LS_PREFIX + '_student_name',
+          LS_PREFIX + '_notes', LS_PREFIX + '_study_seconds'];
+}
+function hasLearningRecord() {
+  // 注意：首次打开页面时 init→loadProgress→navigateTo(0)→saveProgress() 也会写入 _progress，
+  // 所以不能「key 存在就算有记录」，必须存在实质学习行为（答题/笔记/姓名/看过视频）才算。
+  try {
+    const raw = localStorage.getItem(LS_PREFIX + '_progress');
+    if (raw) {
+      const p = JSON.parse(raw);
+      const meaningful =
+        (p.completedSections && p.completedSections.length > 0) ||
+        (p.chapterQuizDone && p.chapterQuizDone.some(function (v) { return !!v; })) ||
+        (p.chapterQuizAnswers && Object.keys(p.chapterQuizAnswers).length > 0) ||
+        !!p.finalTaskSubmitted ||
+        (p.writings && Object.keys(p.writings).length > 0) ||
+        (p.videoMaxTime && Object.keys(p.videoMaxTime).length > 0) ||
+        (p.videoLastPos && Object.keys(p.videoLastPos).length > 0);
+      if (meaningful) return true;
+    }
+    if (localStorage.getItem(LS_PREFIX + '_student_name')) return true;
+    const n = localStorage.getItem(LS_PREFIX + '_notes');
+    if (n && n !== '{}' && n.trim() !== '') return true;
+  } catch (e) {}
+  return false;
+}
+let resetConfirmFromResume = false;
+function showResumeCard() {
+  document.getElementById('resumeCard').style.display = '';
+  document.getElementById('resetConfirmCard').style.display = 'none';
+  document.getElementById('resetOverlay').classList.add('show');
+}
+function showResetConfirmCard() {
+  document.getElementById('resumeCard').style.display = 'none';
+  document.getElementById('resetConfirmCard').style.display = '';
+  document.getElementById('resetOverlay').classList.add('show');
+}
+function openResetConfirm() {
+  resetConfirmFromResume = false;
+  showResetConfirmCard();
+}
+function resumeToResetConfirm() {
+  resetConfirmFromResume = true;
+  showResetConfirmCard();
+}
+function cancelResetConfirm() {
+  if (resetConfirmFromResume) { resetConfirmFromResume = false; showResumeCard(); } // 退回选择卡
+  else document.getElementById('resetOverlay').classList.remove('show');
+}
+function resumeContinue() {
+  try { sessionStorage.setItem(RESUME_FLAG_KEY, 'continue'); } catch (e) {}
+  document.getElementById('resetOverlay').classList.remove('show');
+  showToast('欢迎回来！已为你恢复上次的学习进度', 'success');
+}
+function initResumeFlow() {
+  if (!hasLearningRecord()) return;
+  try { if (sessionStorage.getItem(RESUME_FLAG_KEY) === 'continue') return; } catch (e) {}
+  showResumeCard();
+}
+function resetAllProgress() {
+  try {
+    getResetLsKeys().forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    try { sessionStorage.removeItem(RESUME_FLAG_KEY); } catch (e) {}
+  } catch (e) {}
+  try { showToast('学习进度已重置，正在重新开始…', 'success'); } catch (e) {}
+  setTimeout(function () { location.reload(); }, 400); // 必须整页刷新，否则内存态会被 saveProgress 写回
 }
 
 // ============================================================
